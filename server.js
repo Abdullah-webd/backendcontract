@@ -10,38 +10,45 @@ const app = express();
 // Security middleware
 app.use(helmet());
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
 // Rate limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100, // limit each IP to 100 requests per windowMs
+  windowMs: 15 * 60 * 1000,
+  max: 100,
   message: 'Too many requests from this IP, please try again later.',
 });
 app.use(limiter);
 
-// CORS configuration
+// CORS
 app.use(cors({
-  origin: ['http://localhost:3001', 'http://127.0.0.1:3000'],
-  credentials: true
+  origin: [
+    'http://localhost:3001',
+    'http://127.0.0.1:3000',
+    'https://petrotech-frontend.onrender.com' // <-- replace with your actual frontend URL
+  ],
+  credentials: true,
 }));
 
-// Body parsing middleware
+// Body parsers
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Connect to MongoDB
+// MongoDB connection
+const MONGODB_URI = process.env.MONGODB_URI;
+if (!MONGODB_URI) {
+  console.error('❌ MONGODB_URI not defined in environment variables');
+  process.exit(1);
+}
+
 mongoose.connect(MONGODB_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
 })
 .then(() => {
-  console.log('Connected to MongoDB');
-  // Create admin user if it doesn't exist
+  console.log('✅ Connected to MongoDB');
   require('./config/seedAdmin')();
 })
 .catch((error) => {
-  console.error('MongoDB connection error:', error);
+  console.error('❌ MongoDB connection error:', error);
   process.exit(1);
 });
 
@@ -50,18 +57,18 @@ app.use('/api/posts', require('./routes/posts'));
 app.use('/api/contacts', require('./routes/contacts'));
 app.use('/api/admin', require('./routes/admin'));
 
-// Health check endpoint
+// Health check
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'OK', 
+  res.json({
+    status: 'OK',
     timestamp: new Date().toISOString(),
     mongodb: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected'
   });
 });
 
-// Error handling middleware
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
+  console.error('❌ Error:', err.stack);
   res.status(500).json({ message: 'Something went wrong!' });
 });
 
@@ -70,7 +77,8 @@ app.use('*', (req, res) => {
   res.status(404).json({ message: 'Route not found' });
 });
 
+// Start server
 const PORT = process.env.PORT || 2000;
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });
