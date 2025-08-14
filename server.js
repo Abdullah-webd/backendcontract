@@ -24,6 +24,7 @@ app.use(cors({
     'http://localhost:3000',
     'http://127.0.0.1:3000',
     'https://backendcontract-1.onrender.com',
+    'https://www.velanoxenergy.com',
     "https://velanoxenergy.vercel.app" // <-- replace with your actual frontend URL
   ],
   credentials: true,
